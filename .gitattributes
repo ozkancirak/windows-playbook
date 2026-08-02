@@ -1,0 +1,23 @@
+# Keep repository text deterministic across Windows, Linux, and macOS.
+* text=auto eol=lf
+
+# Windows-native scripts and registry files require CRLF.
+*.bat text eol=crlf
+*.cmd text eol=crlf
+*.ps1 text eol=crlf
+*.psm1 text eol=crlf
+*.reg text eol=crlf
+*.url text eol=crlf
+
+# Cross-platform shell scripts remain LF.
+*.sh text eol=lf
+
+# Never normalize binary payloads.
+*.apbx binary
+*.cab binary
+*.dll binary
+*.exe binary
+*.ico binary
+*.lnk binary
+*.png binary
+*.zip binary

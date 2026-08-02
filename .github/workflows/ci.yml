@@ -1,0 +1,96 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  validate:
+    name: Validate
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Install Python dependencies
+        run: python -m pip install --disable-pip-version-check pyyaml
+
+      - name: Validate YAML syntax
+        run: python tools/validate-yaml.py Configuration
+
+      - name: Validate playbook structure
+        shell: pwsh
+        run: ./tools/validate-playbook.ps1
+
+      - name: Analyse PowerShell
+        shell: pwsh
+        run: |
+          Install-Module PSScriptAnalyzer -Force -Scope CurrentUser -SkipPublisherCheck
+          $results = Invoke-ScriptAnalyzer -Path . -Recurse -Severity Error
+          if ($results) {
+              $results | Format-Table -AutoSize | Out-String -Width 4096 | Write-Host
+              throw "PSScriptAnalyzer reported $($results.Count) error-level finding(s)."
+          }
+          Write-Host 'No error-level findings.'
+
+  build:
+    name: Build playbook
+    runs-on: windows-latest
+    needs: validate
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Install Python dependencies
+        run: python -m pip install --disable-pip-version-check pyyaml
+
+      - name: Read playbook version
+        id: meta
+        shell: pwsh
+        run: |
+          [xml]$conf = Get-Content -LiteralPath 'playbook.conf' -Raw
+          $version = $conf.Playbook.Version
+          $short = $env:GITHUB_SHA.Substring(0, 8)
+          "version=$version"        >> $env:GITHUB_OUTPUT
+          "name=Windows Playbook $version+$short" >> $env:GITHUB_OUTPUT
+
+      - name: Build .apbx
+        shell: pwsh
+        run: |
+          ./build-playbook.ps1 `
+            -FileName '${{ steps.meta.outputs.name }}' `
+            -ReplaceOldPlaybook `
+            -DontOpenPbLocation
+
+      - name: Validate built archive
+        shell: pwsh
+        run: ./tools/validate-release.ps1 -ArtifactPath '${{ steps.meta.outputs.name }}.apbx' -ArchivePassword 'malte'
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: windows-playbook-${{ steps.meta.outputs.version }}
+          path: '*.apbx'
+          if-no-files-found: error
+          retention-days: 30

@@ -1,0 +1,9 @@
+---
+title: Enable Windows Recovery Environment
+description: Ensures that the Windows Recovery Environment is enabled
+actions:
+  - !cmd:
+    command: 'reagentc /enable'
+    exeDir: true
+    wait: true
+    runas: currentUserElevated

@@ -1,0 +1,9 @@
+---
+title: Apply Optimized Network Settings
+description: Applies the playbook's optimized network settings
+actions:
+  - !cmd:
+    command: '"SystemConfig\9. Troubleshooting\Network\Reset Network to Optimized Default.cmd" /silent'
+    exeDir: true
+    wait: true
+    runas: currentUserElevated

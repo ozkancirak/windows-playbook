@@ -1,0 +1,11 @@
+---
+title: Defaults
+description: Runs the default configuration scripts
+actions:
+  - !writeStatus: {status: 'Applying default configuration settings'}
+  - !powerShell:
+    command: '.\ApplyDefaultConfiguration.ps1'
+    exeDir: true
+    onUpgrade: true
+    wait: true
+    runas: currentUserElevated

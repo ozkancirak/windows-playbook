@@ -1,0 +1,9 @@
+# MacOS
+.DS_Store
+
+# Playbooks
+*.apbx
+*.apbx.tmp
+
+# Local release output
+dist/

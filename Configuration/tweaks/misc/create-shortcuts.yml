@@ -1,0 +1,8 @@
+---
+title: Create Shortcuts
+description: Creates shortcuts for the desktop and more
+actions:
+  - !powerShell:
+    command: '.\CreateShortcuts.ps1'
+    exeDir: true
+    wait: true

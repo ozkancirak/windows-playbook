@@ -1,0 +1,24 @@
+@echo off
+
+set "___args="%~f0" %*"
+fltmc > nul 2>&1 || (
+    echo Administrator privileges are required.
+    powershell -c "Start-Process -Verb RunAs -FilePath 'cmd' -ArgumentList """/c $env:___args"""" 2> nul || (
+        echo You must run this script as admin.
+        if "%*"=="" pause
+        exit /b 1
+    )
+    exit /b
+)
+
+
+reg delete "HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU" /v "AUOptions" /f > nul 2>&1
+:: Breaks 'Receive updates for other Microsoft products'
+:: reg delete "HKLM\SOFTWARE\Policies\Microsoft\Windows\WindowsUpdate\AU" /v "NoAutoUpdate" /f > nul 2>&1
+if "%~1"=="/silent" exit /b
+
+echo.
+echo Automatic Updates have been enabled.
+echo Press any key to exit...
+pause > nul
+exit /b

@@ -1,0 +1,105 @@
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Tag to release (e.g. v0.1.0)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    name: Build and publish
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v6
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: '3.12'
+
+      - name: Install Python dependencies
+        run: python -m pip install --disable-pip-version-check pyyaml
+
+      - name: Validate YAML syntax
+        run: python tools/validate-yaml.py Configuration
+
+      - name: Validate playbook structure
+        shell: pwsh
+        run: ./tools/validate-playbook.ps1
+
+      - name: Resolve version
+        id: meta
+        shell: pwsh
+        run: |
+          $tag = '${{ inputs.tag || github.ref_name }}'
+          [xml]$conf = Get-Content -LiteralPath 'playbook.conf' -Raw
+          $confVersion = $conf.Playbook.Version
+          $tagVersion = $tag -replace '^v', ''
+
+          if ($tagVersion -ne $confVersion) {
+              throw "Tag version ($tagVersion) does not match playbook.conf Version ($confVersion). Bump one of them before releasing."
+          }
+
+          "tag=$tag"                                  >> $env:GITHUB_OUTPUT
+          "version=$confVersion"                      >> $env:GITHUB_OUTPUT
+          "name=Windows Playbook $confVersion"        >> $env:GITHUB_OUTPUT
+
+      - name: Build .apbx
+        shell: pwsh
+        run: |
+          ./build-playbook.ps1 `
+            -FileName '${{ steps.meta.outputs.name }}' `
+            -ReplaceOldPlaybook `
+            -DontOpenPbLocation
+
+      - name: Validate built archive
+        shell: pwsh
+        run: ./tools/validate-release.ps1 -ArtifactPath '${{ steps.meta.outputs.name }}.apbx' -ArchivePassword 'malte'
+
+      - name: Generate SHA256SUMS.txt
+        shell: pwsh
+        run: |
+          Get-ChildItem -File -Filter '*.apbx' | ForEach-Object {
+              $hash = (Get-FileHash -LiteralPath $_.FullName -Algorithm SHA256).Hash.ToLower()
+              "$hash  $($_.Name)"
+          } | Set-Content -LiteralPath 'SHA256SUMS.txt' -Encoding ascii
+          Get-Content SHA256SUMS.txt | Write-Host
+
+      - name: Create release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        shell: pwsh
+        run: |
+          $notes = @"
+          Built from ``$($env:GITHUB_SHA.Substring(0,8))`` by GitHub Actions.
+
+          ## Verifying your download
+
+          Every release ships a ``SHA256SUMS.txt``. Check your download against it:
+
+          ``````powershell
+          Get-FileHash '.\${{ steps.meta.outputs.name }}.apbx' -Algorithm SHA256
+          ``````
+
+          ## Requirements
+
+          Windows 11 24H2 (build 26100) or 25H2 (build 26200), and [AME Wizard](https://amelabs.net) to apply the playbook.
+          "@
+
+          gh release create '${{ steps.meta.outputs.tag }}' `
+            '${{ steps.meta.outputs.name }}.apbx' `
+            'SHA256SUMS.txt' `
+            --title '${{ steps.meta.outputs.name }}' `
+            --notes $notes

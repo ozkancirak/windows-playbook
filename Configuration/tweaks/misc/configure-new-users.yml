@@ -1,0 +1,10 @@
+---
+title: Configure New Users
+description: Adds a RunOnce entry that applies dynamically generated tweaks when a new user signs in
+actions:
+  - !registryValue:
+    path: 'HKU\AME_UserHive_Default\SOFTWARE\Microsoft\Windows\CurrentVersion\RunOnce'
+    value: 'RunScript'
+    data: |
+      powershell -EP Bypass -NoP & """$([Environment]::GetFolderPath('Windows'))\SystemRuntime\Scripts\ApplyNewUserConfiguration.ps1"""
+    type: REG_SZ

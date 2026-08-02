@@ -1,0 +1,9 @@
+---
+title: Backup Optimized Services and Drivers
+description: Backs up the optimized service and driver configuration after all tweaks are finished
+actions:
+  - !powerShell:
+    command: >-
+      .\ExportServiceConfiguration.ps1 -FilePath """$([Environment]::GetFolderPath('Windows'))\SystemRuntime\Other\OptimizedServices.reg"""
+    wait: true
+    exeDir: true
