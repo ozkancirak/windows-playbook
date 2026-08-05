@@ -319,7 +319,7 @@ function Add-TrustedPackageCertificate {
 
 	$addedStores = @()
 	try {
-		foreach ($storeName in @('Root', 'TrustedPublisher')) {
+		foreach ($storeName in @('TrustedPeople')) {
 			$store = [Security.Cryptography.X509Certificates.X509Store]::new(
 				$storeName,
 				[Security.Cryptography.X509Certificates.StoreLocation]::LocalMachine
@@ -347,6 +347,15 @@ function Add-TrustedPackageCertificate {
 	}
 
 	return $addedStores
+}
+
+function Ensure-CbsTestRootMarker {
+	# CBS requires this Microsoft test-root marker when opening locally signed
+	# component CABs on current Windows servicing builds.
+	$certRegPath = 'HKLM:\Software\Microsoft\SystemCertificates\ROOT\Certificates\8A334AA8052DD244A647306A76B8178FA215F344'
+	if (-not (Test-Path -LiteralPath $certRegPath)) {
+		New-Item -Path $certRegPath -Force | Out-Null
+	}
 }
 
 function ProcessCab($cabPath) {
@@ -403,6 +412,7 @@ function ProcessCab($cabPath) {
 		# The public certificate remains trusted because Windows servicing can need it
 		# later when reading the package catalogs or the local repair source.
 		$addedCertStores = @(Add-TrustedPackageCertificate -Certificate $cert)
+		Ensure-CbsTestRootMarker
 	} catch {
 		Write-Host "[ERROR] Cert error from '$cabPath': $_" -ForegroundColor Red
 		$script:errorLevel++
