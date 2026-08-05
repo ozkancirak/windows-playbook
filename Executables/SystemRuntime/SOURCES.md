@@ -14,7 +14,7 @@ The root of the file paths listed here starts in `Executables`.
     - Source: https://github.com/deaglebullet/TimerResolution/releases/download/MeasureSleep-v1.0.0/MeasureSleep.exe
     - Version: v1.0.0
 - Repository: https://github.com/deaglebullet/TimerResolution
-- License: [GNU General Public License v3.0](https://github.com/adeaglebullet/TimerResolution/blob/main/LICENSE)
+- License: [GNU General Public License v3.0](https://github.com/deaglebullet/TimerResolution/blob/main/LICENSE)
 - Last Verified: 5/24/2024 by Xyueta
 
 ## ViVeTool
