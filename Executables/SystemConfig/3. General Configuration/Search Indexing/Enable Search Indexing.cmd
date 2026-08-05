@@ -36,7 +36,7 @@ for /f "usebackq delims=" %%a in (`dir /b /a:d "%SystemDrive%\Users"`) do (
 reg add "HKLM\SOFTWARE\Microsoft\Windows Search" /v SetupCompletedSuccessfully /t REG_DWORD /d 0 /f > nul
 
 set regCmd=^>nul reg add "HKLM\Software\Microsoft\Windows Search\Gather\Windows\SystemIndex" /v "RespectPowerModes" /t REG_DWORD /d 
-if "%~1"=="/silent" (%regCmd% "0" /f & exit /b)
+if "%~1"=="/silent" (%regCmd% "1" /f & exit /b)
 
 echo.
 :: Respect Power Settings when Search Indexing to prevent performance loss during gaming or battery drain
