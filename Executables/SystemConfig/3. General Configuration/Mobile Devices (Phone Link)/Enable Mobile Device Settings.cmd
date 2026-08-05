@@ -14,7 +14,7 @@ fltmc > nul 2>&1 || (
 
 reg delete "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Policies\System" /v "NoConnectedUser" /f > nul 2>&1
 reg delete "HKLM\SOFTWARE\Policies\Microsoft\Windows\CloudContent" /v "DisableWindowsConsumerFeatures" /f > nul 2>&1
-reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsStore\WindowsUpdate" /v "AutoDownload" /t REG_DWORD /d "4" /f > nul
+reg add "HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\WindowsStore\WindowsUpdate" /v "AutoDownload" /t REG_DWORD /d "2" /f > nul
 call "%windir%\SystemRuntime\Scripts\ConfigureSettingsPages.cmd" /unhide mobile-devices
 
 start ms-settings:mobile-devices
