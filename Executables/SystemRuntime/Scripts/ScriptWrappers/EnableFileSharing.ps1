@@ -6,7 +6,7 @@ $networkDiscoveryConfigPath = "$([Environment]::GetFolderPath('Windows'))\System
 Enable-NetAdapterBinding -Name "*" -ComponentID ms_msclient, ms_server, ms_lltdio, ms_rspndr | Out-Null
 
 # Enable Network Discovery services and its dependencies
-Start-Process -FilePath "$networkDiscoveryConfigPath\Enable Network Discovery Services (default).cmd" -ArgumentList "/silent" -WindowStyle Hidden
+& "$networkDiscoveryConfigPath\Enable Network Discovery Services (default).cmd" /silent | Out-Null
 
 # Enable NetBios over TCP/IP
 $interfaces = Get-ChildItem "HKLM:\SYSTEM\CurrentControlSet\Services\NetBT\Parameters\Interfaces" -Recurse | Where-Object { $_.GetValue("NetbiosOptions") -ne $null }
@@ -37,12 +37,12 @@ if ($LASTEXITCODE -eq 1) {
 
 choice /c:yn /n /m "Would you like to add the Network Navigation Pane to the Explorer sidebar? [Y/N] "
 if ($LASTEXITCODE -eq 1) {
-    reg import "$([Environment]::GetFolderPath('Windows'))\SystemConfig\3. General Configuration\File Sharing\Network Navigation Pane\User Network Navigation Pane choice.reg" | Out-Null
+    & "$([Environment]::GetFolderPath('Windows'))\SystemConfig\3. General Configuration\File Sharing\Network Navigation Pane\Enable Network Navigation Pane.cmd" /silent | Out-Null
 }
 
 choice /c:yn /n /m "Would you like to restore the 'Give access to' context menu in Explorer? [Y/N] "
 if ($LASTEXITCODE -eq 1) {
-    reg import "$([Environment]::GetFolderPath('Windows'))\SystemConfig\3. General Configuration\File Sharing\Give Access To Menu\Enable Give Access To Menu.reg" | Out-Null
+    & "$([Environment]::GetFolderPath('Windows'))\SystemConfig\3. General Configuration\File Sharing\Give Access To Menu\Enable Give Access To Menu.cmd" /silent | Out-Null
 }
 
 Write-Host "`nCompleted! " -ForegroundColor Green -NoNewLine
