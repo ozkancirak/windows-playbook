@@ -36,13 +36,20 @@ if ([System.Environment]::OSVersion.Version.Build -ge 22000) {
 # Set visual effects
 & "$systemConfig\4. Interface Tweaks\Visual Effects (Animations)\Optimized Visual Effects (default).cmd" /silent
 
-# Set taskbar pins 
-$valueName = "Browser"
-$value = Get-ItemProperty -Path "HKLM:\SOFTWARE\SystemConfig\SetupOptions" -Name $valueName -ErrorAction Stop
-$Browser = $value.$valueName
-$Browser
+# Set taskbar pins
+$browser = $null
+try {
+    $browser = Get-ItemPropertyValue -Path 'HKLM:\SOFTWARE\SystemConfig\SetupOptions' -Name 'Browser' -ErrorAction Stop
+}
+catch {
+    Write-Warning 'No saved browser selection was found; using the taskbar fallback.'
+}
 
-& "$systemRuntime\Scripts\ConfigureTaskbarPins.ps1" $Browser
+if ([string]::IsNullOrWhiteSpace([string]$browser)) {
+    $browser = $null
+}
+
+& "$systemRuntime\Scripts\ConfigureTaskbarPins.ps1" -Browser $browser
 Set-ItemProperty -Path "HKCU:\SOFTWARE\Microsoft\Windows\CurrentVersion\Search" -Name "SearchboxTaskbarMode" -Value 1
 
 # Leave
