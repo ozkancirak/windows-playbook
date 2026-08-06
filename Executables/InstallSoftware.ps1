@@ -116,15 +116,30 @@ foreach ($a in $vcredists.GetEnumerator()) {
 
     if ($vcArgs -match ":") {
         $msiDir = "$tempDir\vcredist-$vcName"
-        Start-Process -FilePath $vcExePath -ArgumentList "$vcArgs`"$msiDir`"" -Wait -WindowStyle Hidden
+        $extractProcess = Start-Process -FilePath $vcExePath -ArgumentList "$vcArgs`"$msiDir`"" -Wait -PassThru -WindowStyle Hidden -ErrorAction Stop
+        if ($extractProcess.ExitCode -ne 0) {
+            Write-Error "Failed to extract MSI files for $vcName (exit code $($extractProcess.ExitCode))."
+            exit 1
+        }
 
-        $msiPaths = (Get-ChildItem -Path $msiDir -Filter *.msi -EA 0).FullName
-        if (!$msiPaths) {
-            Write-Output "Failed to extract MSI for $vcName, not installing."
+        $msiPaths = @(Get-ChildItem -LiteralPath $msiDir -Filter '*.msi' -File -EA SilentlyContinue |
+            Sort-Object -Property FullName |
+            Select-Object -ExpandProperty FullName)
+        if ($msiPaths.Count -eq 0) {
+            Write-Error "Failed to find extracted MSI files for $vcName."
+            exit 1
         }
         else {
-            $msiPaths | ForEach-Object {
-                Start-Process -FilePath "msiexec.exe" -ArgumentList "/log `"$msiDir\logfile.log`" /i `"$_`" $msiArgs" -WindowStyle Hidden
+            for ($index = 0; $index -lt $msiPaths.Count; $index++) {
+                $msiPath = $msiPaths[$index]
+                $msiLogPath = Join-Path $msiDir ('{0}-{1:D2}-{2}.log' -f $vcName, ($index + 1), [IO.Path]::GetFileNameWithoutExtension($msiPath))
+                $arguments = '/i "{0}" {1} /L*v "{2}"' -f $msiPath, $msiArgs, $msiLogPath
+                $msiProcess = Start-Process -FilePath "$env:SystemRoot\System32\msiexec.exe" -ArgumentList $arguments -Wait -PassThru -WindowStyle Hidden -ErrorAction Stop
+
+                if ($msiProcess.ExitCode -notin @(0, 1641, 3010)) {
+                    Write-Error "Failed to install $vcName from '$msiPath' (exit code $($msiProcess.ExitCode)). See '$msiLogPath'."
+                    exit 1
+                }
             }
         }
     }
