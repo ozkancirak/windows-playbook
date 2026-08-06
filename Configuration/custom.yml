@@ -4,9 +4,49 @@ description: Runs all of the Playbook files
 actions:
   # some changes requires default user access. loading the hive before everything else is required
   - !powerShell:
-    command: 'reg load HKU\AME_UserHive_Default C:\Users\Default\NTUSER.DAT'
+    command: |
+      $profileList = Get-ItemProperty -LiteralPath 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\ProfileList' -ErrorAction Stop
+      $profilesDirectory = [Environment]::ExpandEnvironmentVariables([string]$profileList.ProfilesDirectory)
+      if ([string]::IsNullOrWhiteSpace($profilesDirectory)) {
+          throw 'Windows did not provide a ProfilesDirectory path.'
+      }
+      $profilesDirectory = [IO.Path]::GetFullPath($profilesDirectory)
+      if (!(Test-Path -LiteralPath $profilesDirectory -PathType Container)) {
+          throw "The profiles directory was not found: '$profilesDirectory'."
+      }
+
+      $defaultProfile = [Environment]::ExpandEnvironmentVariables([string]$profileList.Default)
+      if ([string]::IsNullOrWhiteSpace($defaultProfile)) {
+          $defaultProfile = Join-Path $profilesDirectory 'Default'
+      } elseif (![IO.Path]::IsPathRooted($defaultProfile)) {
+          $defaultProfile = Join-Path $profilesDirectory $defaultProfile
+      }
+      $defaultProfile = [IO.Path]::GetFullPath($defaultProfile)
+      $defaultHive = Join-Path $defaultProfile 'NTUSER.DAT'
+      if (!(Test-Path -LiteralPath $defaultHive -PathType Leaf)) {
+          throw "The Default User registry hive was not found: '$defaultHive'."
+      }
+
+      $mountPath = 'Registry::HKEY_USERS\AME_UserHive_Default'
+      if (Test-Path -LiteralPath $mountPath) {
+          $regOutput = & reg.exe unload 'HKU\AME_UserHive_Default' 2>&1
+          $regExitCode = $LASTEXITCODE
+          if ($regExitCode -ne 0) {
+              throw "Failed to unload a stale Default User hive (exit $regExitCode): $($regOutput -join ' ')"
+          }
+      }
+
+      $regOutput = & reg.exe load 'HKU\AME_UserHive_Default' $defaultHive 2>&1
+      $regExitCode = $LASTEXITCODE
+      if ($regExitCode -ne 0) {
+          throw "Failed to load the Default User hive (exit $regExitCode): $($regOutput -join ' ')"
+      }
+      if (!(Test-Path -LiteralPath $mountPath)) {
+          throw 'reg.exe reported success, but the Default User hive is not mounted.'
+      }
     oobe: false
     wait: true
+    handleExitCodes: { "!0": halt }
   - !writeStatus: { status: "Removing previous configuration files" }
   - !powerShell:
     command: '.\StopConfigurationProcesses.ps1'
@@ -89,9 +129,18 @@ actions:
 
   # Unloading the hive
   - !powerShell:
-    command: 'reg unload HKU\AME_UserHive_Default'
+    command: |
+      $regOutput = & reg.exe unload 'HKU\AME_UserHive_Default' 2>&1
+      $regExitCode = $LASTEXITCODE
+      if ($regExitCode -ne 0) {
+          throw "Failed to unload the Default User hive (exit $regExitCode): $($regOutput -join ' ')"
+      }
+      if (Test-Path -LiteralPath 'Registry::HKEY_USERS\AME_UserHive_Default') {
+          throw 'reg.exe reported success, but the Default User hive is still mounted.'
+      }
     oobe: false
     wait: true
+    handleExitCodes: { "!0": halt }
 
   # Set PowerShell execution policy to RemoteSigned from the previous "Unrestricted"
   # This allows local configuration scripts to run while requiring signatures for downloaded scripts
