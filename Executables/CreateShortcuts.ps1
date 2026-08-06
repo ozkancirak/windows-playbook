@@ -24,4 +24,4 @@ Copy-Item $defaultShortcut -Destination "$([Environment]::GetFolderPath('CommonS
 
 Write-Title "Creating services restore shortcut..."
 $desktop = "$windir\SystemConfig"
-New-Shortcut -Source "$desktop\9. Troubleshooting\Set services to defaults.cmd" -Destination "$desktop\6. Advanced Configuration\Services\Set services to defaults.lnk"
+New-Shortcut -Source "$desktop\9. Troubleshooting\Reset Services to Defaults.cmd" -Destination "$desktop\6. Advanced Configuration\Services\Reset Services to Defaults.lnk"
