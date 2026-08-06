@@ -1,0 +1,9 @@
+---
+title: Enable Screen Capture Hotkey
+description: Enables using the Print Screen key to open Screen Capture when Snipping Tool is available
+actions:
+  - !registryValue:
+    path: 'HKCU\Control Panel\Keyboard'
+    value: 'PrintScreenKeyForSnippingEnabled'
+    data: '1'
+    type: REG_DWORD

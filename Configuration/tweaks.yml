@@ -164,6 +164,7 @@ actions:
   - !task: {path: 'tweaks\qol\visual-effects.yml'}
   - !task: {path: 'tweaks\qol\disable-tips.yml'}
   - !task: {path: 'tweaks\qol\disable-win11-settings-banner.yml'}
+  - !task: {path: 'tweaks\qol\enable-screen-capture-hotkey.yml'}
   - !task: {path: 'tweaks\qol\disable-screen-capture-hotkey.yml', option: 'remove-snipping-tool'}
   - !task: {path: 'tweaks\qol\disable-dynamic-lighting.yml'}
   - !task: {path: 'tweaks\qol\disable-auto-app-archival.yml'}
