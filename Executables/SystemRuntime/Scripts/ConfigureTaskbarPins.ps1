@@ -1,5 +1,7 @@
 param (
-    [string]$Browser
+    [string]$Browser,
+    [switch]$CurrentUserOnly,
+    [switch]$NoExplorerStop
 )
 $windir = [Environment]::GetFolderPath('Windows')
 Set-Location "$windir\SystemRuntime\Scripts"
@@ -48,80 +50,158 @@ $shortcuts = @{
 
 if ($Browser) {
     if ($Browser -notin $shortcuts.Keys) {
-        Write-Error "Browser '$Browser' not listed!"
+        Write-Warning "Browser '$Browser' is not listed; using the taskbar fallback."
         $Browser = $null
     }
     elseif (!(Test-Path $shortcuts.$Browser.Path)) {
-        Write-Error "Browser '$Browser' path not found!"
+        Write-Warning "Browser '$Browser' was not found; using the taskbar fallback."
         $Browser = $null
     }
 }
 
-# Init shortcuts
-$tmp = New-Item (Join-Path -Path $([System.IO.Path]::GetTempPath()) -ChildPath $([System.Guid]::NewGuid())) -ItemType Directory -Force
-New-Shortcut -Source $($shortcuts.$explorer.Path) -Destination "$tmp\$explorer.lnk"
+$tmp = $null
+try {
+    # Init shortcuts
+    $tmp = New-Item `
+        -Path (Join-Path ([System.IO.Path]::GetTempPath()) ([System.Guid]::NewGuid())) `
+        -ItemType Directory `
+        -Force `
+        -ErrorAction Stop
+    New-Shortcut -Source $shortcuts.$explorer.Path -Destination "$($tmp.FullName)\$explorer.lnk"
+    if (-not $?) {
+        throw 'Failed to create the File Explorer taskbar shortcut.'
+    }
 
-# Decide Registry Favorites
-if ([string]::IsNullOrEmpty($Browser)) {
-    # If Edge exists, pin it, otherwise, pin only File Explorer
-    $edgePath = $shortcuts.$edge.Path
-    if (Test-Path $edgePath) {
-        New-Shortcut -Source $edgePath -Destination "$tmp\$edge.lnk"
-        $Browser = $edge
-        $regTaskbar = $shortcuts.$edge
+    # Decide Registry Favorites
+    if ([string]::IsNullOrEmpty($Browser)) {
+        # If Edge exists, pin it, otherwise, pin only File Explorer
+        $edgePath = $shortcuts.$edge.Path
+        if (Test-Path -LiteralPath $edgePath -PathType Leaf) {
+            New-Shortcut -Source $edgePath -Destination "$($tmp.FullName)\$edge.lnk"
+            if (-not $?) {
+                throw 'Failed to create the Microsoft Edge taskbar shortcut.'
+            }
+
+            $Browser = $edge
+            $regTaskbar = $shortcuts.$edge
+        }
+        else {
+            Write-Warning "Edge isn't installed."
+            $Browser = $explorer
+            $regTaskbar = $shortcuts.$explorer
+        }
     }
     else {
-        Write-Warning "Edge isn't installed."
-        $Browser = $explorer
-        $regTaskbar = $shortcuts.$explorer
+        # Browser options
+        New-Shortcut -Source $shortcuts.$Browser.Path -Destination "$($tmp.FullName)\$Browser.lnk"
+        if (-not $?) {
+            throw "Failed to create the '$Browser' taskbar shortcut."
+        }
+
+        $regTaskbar = $shortcuts.$Browser
     }
-}
-else {
-    # Browser options
-    New-Shortcut -Source $($shortcuts.$Browser.Path) -Destination "$tmp\$Browser.lnk"
-    $regTaskbar = $shortcuts.$Browser
-}
 
-# Set Registry changes
-$reg = @{}
-foreach ($entry in $regTaskbar.GetEnumerator()) {
-    if ($entry.Name -like 'Reg*') {
-        $reg.Add($entry.Name -replace 'Reg', $entry.Value)
+    # Set Registry changes
+    $reg = @{}
+    foreach ($entry in $regTaskbar.GetEnumerator()) {
+        if ($entry.Name -like 'Reg*') {
+            $reg.Add($entry.Name -replace 'Reg', $entry.Value)
+        }
     }
-}
 
-# Paths
-$taskBarLocation = 'Microsoft\Internet Explorer\Quick Launch\User Pinned\TaskBar'
-$rootKey = 'SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Taskband'
+    # Paths
+    $taskBarLocation = 'Microsoft\Internet Explorer\Quick Launch\User Pinned\TaskBar'
+    $rootKey = 'SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Taskband'
 
-# Clearing taskbar, copying the shortcut, setting registry
-foreach ($userKey in (Get-RegUserPaths -NoDefault).PsPath) {
-    $sid = Split-Path $userKey -Leaf
-    $appData = Get-ItemPropertyValue "$userKey\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders" -Name 'AppData' -EA 0
+    function Set-TaskbarPinsForProfile {
+        param (
+            [Parameter(Mandatory = $true)]
+            [string]$Sid,
 
-    if ([string]::IsNullOrEmpty($appData) -or !(Test-Path $appData)) {
-        Write-Error "Couldn't find AppData value for $sid!"
-    }
-    else {
-        Write-Title "Setting '$Browser' taskbar shortcut for '$sid'..."
+            [AllowNull()]
+            [AllowEmptyString()]
+            [string]$AppData,
+
+            [Parameter(Mandatory = $true)]
+            [string]$RegistryKey,
+
+            [switch]$Required
+        )
+
+        if ([string]::IsNullOrEmpty($AppData) -or !(Test-Path -LiteralPath $AppData -PathType Container)) {
+            $message = "Couldn't find AppData path for $Sid."
+            if ($Required) {
+                throw $message
+            }
+
+            Write-Warning "$message Skipping taskbar pin setup for this profile."
+            return
+        }
+
+        Write-Title "Setting '$Browser' taskbar shortcut for '$Sid'..."
 
         Write-Output "Clearing current shortcuts..."
-        $taskBarAppData = "$appData\$taskBarLocation"
-        if (Test-Path $taskBarAppData -PathType Leaf) {
-            Write-Output "Deleting TaskBar file..."
-            Remove-Item -Path $taskBarAppData -Force
+        $taskBarAppData = Join-Path $AppData $taskBarLocation
+        if (Test-Path -LiteralPath $taskBarAppData -PathType Leaf) {
+            Write-Output "Deleting corrupted TaskBar file..."
+            Remove-Item -LiteralPath $taskBarAppData -Force -ErrorAction Stop
         }
-        Get-ChildItem $taskBarAppData | Remove-Item -Force -Recurse
+        if (-not (Test-Path -LiteralPath $taskBarAppData -PathType Container)) {
+            Write-Output "Creating TaskBar folder..."
+            $null = New-Item -Path $taskBarAppData -ItemType Directory -Force -ErrorAction Stop
+        }
+        else {
+            Get-ChildItem -LiteralPath $taskBarAppData -Force -ErrorAction Stop |
+                Remove-Item -Force -Recurse -ErrorAction Stop
+        }
 
         Write-Output "Adding new shortcuts..."
-        Copy-Item -Path "$tmp\*" -Destination $taskBarAppData -Force
+        Get-ChildItem -LiteralPath $tmp.FullName -File -ErrorAction Stop |
+            Copy-Item -Destination $taskBarAppData -Force -ErrorAction Stop
 
         Write-Output "Changing in Registry..."
-        $key = "$(Convert-Path $userKey)\$rootKey"
         foreach ($entry in $reg.GetEnumerator()) {
-            reg add `"$key`" /v $($entry.Name) /t REG_BINARY /d `"$($entry.Value)`" /f | Out-Null
+            & reg.exe add $RegistryKey /v $entry.Name /t REG_BINARY /d $entry.Value /f | Out-Null
+            if ($LASTEXITCODE -ne 0) {
+                throw "Failed to set taskbar registry value '$($entry.Name)' for $Sid."
+            }
         }
     }
-}
 
-Stop-Process -Name explorer -Force
+    if ($CurrentUserOnly) {
+        Set-TaskbarPinsForProfile `
+            -Sid ([System.Security.Principal.WindowsIdentity]::GetCurrent().User.Value) `
+            -AppData ([Environment]::GetFolderPath('ApplicationData')) `
+            -RegistryKey "HKCU\$rootKey" `
+            -Required
+    }
+    else {
+        # Clearing taskbar, copying the shortcut, setting registry
+        foreach ($userKey in (Get-RegUserPaths -NoDefault).PsPath) {
+            $sid = Split-Path $userKey -Leaf
+            $appData = Get-ItemPropertyValue `
+                -Path "$userKey\SOFTWARE\Microsoft\Windows\CurrentVersion\Explorer\Shell Folders" `
+                -Name 'AppData' `
+                -ErrorAction SilentlyContinue
+
+            if ([string]::IsNullOrEmpty($appData) -or !(Test-Path -LiteralPath $appData -PathType Container)) {
+                Write-Warning "Couldn't find AppData path for $sid. Skipping taskbar pin setup for this profile."
+                continue
+            }
+
+            Set-TaskbarPinsForProfile `
+                -Sid $sid `
+                -AppData $appData `
+                -RegistryKey "$(Convert-Path $userKey)\$rootKey"
+        }
+    }
+
+    if (-not $NoExplorerStop) {
+        Stop-Process -Name explorer -Force -ErrorAction SilentlyContinue
+    }
+}
+finally {
+    if ($null -ne $tmp -and (Test-Path -LiteralPath $tmp.FullName)) {
+        Remove-Item -LiteralPath $tmp.FullName -Recurse -Force -ErrorAction SilentlyContinue
+    }
+}

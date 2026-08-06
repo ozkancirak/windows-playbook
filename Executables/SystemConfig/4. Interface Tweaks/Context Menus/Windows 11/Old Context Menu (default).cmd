@@ -2,6 +2,8 @@
 :: Change to match the setting name (e.g., Sleep, Indexing, etc.)
 :: Change to 0 (Disabled) or 1 (Enabled/Minimal) etc
 
+if /i "%~1"=="/justcontext" goto applyUserSetting
+
 set "___args="%~f0" %*"
 fltmc > nul 2>&1 || (
     echo Administrator privileges are required.
@@ -17,12 +19,13 @@ fltmc > nul 2>&1 || (
 
 :: End of state and path update
 
-reg add "HKCU\Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}\InprocServer32" /d "" /f > nul
+:applyUserSetting
+reg add "HKCU\Software\Classes\CLSID\{86ca1aa0-34aa-4e8b-a509-50c905bae2a2}\InprocServer32" /d "" /f > nul || exit /b 1
 
-if "%~1" == "/justcontext" exit /b
-if "%~1"=="/silent" exit /b
+if /i "%~1"=="/justcontext" exit /b 0
+if /i "%~1"=="/silent" exit /b 0
 
 echo Changes applied successfully.
 echo Press any key to exit...
 pause > nul
-exit /b
+exit /b 0

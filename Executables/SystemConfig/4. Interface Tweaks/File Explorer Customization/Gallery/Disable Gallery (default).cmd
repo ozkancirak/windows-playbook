@@ -2,6 +2,8 @@
 :: Change to match the setting name (e.g., Sleep, Indexing, etc.)
 :: Change to 0 (Disabled) or 1 (Enabled/Minimal) etc
 
+if /i "%~1"=="/justcontext" goto applyUserSetting
+
 set "___args="%~f0" %*"
 fltmc > nul 2>&1 || (
     echo Administrator privileges are required.
@@ -17,12 +19,13 @@ fltmc > nul 2>&1 || (
 
 :: End of state and path update
 
-reg add "HKCU\Software\Classes\CLSID\{e88865ea-0e1c-4e20-9aa6-edcd0212c87c}" /t REG_DWORD /v System.IsPinnedToNameSpaceTree /d "0" /f > nul
+:applyUserSetting
+reg add "HKCU\Software\Classes\CLSID\{e88865ea-0e1c-4e20-9aa6-edcd0212c87c}" /t REG_DWORD /v System.IsPinnedToNameSpaceTree /d "0" /f > nul || exit /b 1
 
-if "%~1" == "/justcontext" exit /b
-if "%~1"=="/silent" exit /b
+if /i "%~1"=="/justcontext" exit /b 0
+if /i "%~1"=="/silent" exit /b 0
 
 echo Changes applied successfully.
 echo Press any key to exit...
 pause > nul
-exit /b
+exit /b 0

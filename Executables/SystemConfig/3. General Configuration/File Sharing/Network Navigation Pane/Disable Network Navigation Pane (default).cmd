@@ -1,5 +1,7 @@
 @echo off
 
+if /i "%~1"=="/justcontext" goto applyUserSetting
+
 set "___args="%~f0" %*"
 fltmc > nul 2>&1 || (
     echo Administrator privileges are required.
@@ -13,11 +15,12 @@ fltmc > nul 2>&1 || (
 
 
 
-reg add "HKCU\SOFTWARE\Classes\CLSID\{F02C1A0D-BE21-4350-88B0-7367FC96EF3C}" /v "System.IsPinnedToNameSpaceTree" /t REG_DWORD /d 0 /f > nul
+:applyUserSetting
+reg add "HKCU\SOFTWARE\Classes\CLSID\{F02C1A0D-BE21-4350-88B0-7367FC96EF3C}" /v "System.IsPinnedToNameSpaceTree" /t REG_DWORD /d 0 /f > nul || exit /b 1
 
-if "%~1" == "/justcontext" exit /b
-if "%~1"=="/silent" exit /b
+if /i "%~1"=="/justcontext" exit /b 0
+if /i "%~1"=="/silent" exit /b 0
 
 echo Finished, Network Navigation Pane is now disabled.
 pause > nul
-exit /b
+exit /b 0

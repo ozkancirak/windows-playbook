@@ -2,6 +2,8 @@
 :: Change to match the setting name (e.g., Sleep, Indexing, etc.)
 :: Change to 0 (Disabled) or 1 (Enabled/Minimal) etc
 
+if /i "%~1"=="/justcontext" goto applyUserSetting
+
 set "___args="%~f0" %*"
 fltmc > nul 2>&1 || (
     echo Administrator privileges are required.
@@ -16,13 +18,14 @@ fltmc > nul 2>&1 || (
 :: Update Registry (State and Path)
 
 :: End of state and path update
-reg delete "HKCU\Software\Classes\Local Settings\Software\Microsoft\Windows\Shell\Bags" /f
-reg add "HKCU\Software\Classes\Local Settings\Software\Microsoft\Windows\Shell\Bags\AllFolders\Shell" /v "FolderType" /t REG_SZ /d "NotSpecified" /f
+:applyUserSetting
+reg delete "HKCU\Software\Classes\Local Settings\Software\Microsoft\Windows\Shell\Bags" /f > nul 2>&1
+reg add "HKCU\Software\Classes\Local Settings\Software\Microsoft\Windows\Shell\Bags\AllFolders\Shell" /v "FolderType" /t REG_SZ /d "NotSpecified" /f > nul || exit /b 1
 
-if "%~1" == "/justcontext" exit /b
-if "%~1"=="/silent" exit /b
+if /i "%~1"=="/justcontext" exit /b 0
+if /i "%~1"=="/silent" exit /b 0
 
 echo Changes applied successfully.
 echo Press any key to exit...
 pause > nul
-exit /b
+exit /b 0

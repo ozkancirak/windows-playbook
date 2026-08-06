@@ -7,11 +7,5 @@ if not exist "%script%" (
     exit /b 1
 )
 
-whoami /user | find /i "S-1-5-18" > nul 2>&1 || (
-    call RunAsTI.cmd "%~f0" %*
-    exit /b
-)
-
 powershell -ExecutionPolicy Bypass -NoProfile -File "%script%"
-
-pause
+exit /b %errorlevel%
