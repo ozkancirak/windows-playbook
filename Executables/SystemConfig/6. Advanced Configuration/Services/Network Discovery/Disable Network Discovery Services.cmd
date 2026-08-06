@@ -18,7 +18,7 @@ fltmc > nul 2>&1 || (
 if not "%~1"=="/silent" call "%windir%\SystemRuntime\Scripts\ShowServiceWarning.cmd" %*
 
 :: Unpin 'Network' from Explorer sidebar
-reg import "%windir%\SystemConfig\3. General Configuration\File Sharing\Network Navigation Pane\Disable Network Navigation Pane (default).reg" > nul
+call "%windir%\SystemConfig\3. General Configuration\File Sharing\Network Navigation Pane\Disable Network Navigation Pane (default).cmd" /justcontext > nul
 
 call setSvc.cmd fdPHost 4
 call setSvc.cmd FDResPub 4
