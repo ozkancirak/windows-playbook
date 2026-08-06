@@ -98,7 +98,7 @@ actions:
   - !task: { path: 'tweaks\scripts\optimize-powershell-ngen.yml' }
   - !task: { path: 'tweaks\qol\config-powershell.yml' }
 
-  # Disk Cleanup is run first so it can run in the background
+  # Disk Cleanup is run first and completes before the remaining tasks
   - !writeStatus: { status: "Cleaning up" }
   - !powerShell:
     command: '.\RunDiskCleanup.ps1'

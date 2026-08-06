@@ -41,9 +41,11 @@ function Invoke-SystemDiskCleanup {
         }
     }
 
-    # Run preset 64 (0-65535)
-    # As cleanmgr has multiple processes, there's no point in making the window hidden as it won't apply
-    Start-Process -FilePath "cleanmgr.exe" -ArgumentList "/sagerun:64" 2>&1 | Out-Null
+    # Run preset 64 (0-65535) and wait for the entire process tree to finish.
+    # As cleanmgr has multiple processes, there's no point in making the window hidden as
+    # it won't apply.
+    $cleanmgrPath = [IO.Path]::Combine([Environment]::SystemDirectory, 'cleanmgr.exe')
+    Start-Process -FilePath $cleanmgrPath -ArgumentList '/sagerun:64' -Wait -ErrorAction Stop
 }
 
 # Check for other installations of Windows
