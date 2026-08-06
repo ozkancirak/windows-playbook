@@ -64,7 +64,9 @@ set "0=%~f0"
 set "1=%*"
 PowerShell -NoP -c iex(gc """$env:0""" -Raw)
 set "RunAsTI_Errorlevel=%ERRORLEVEL%"
-if "%RunAsTI_Errorlevel%" == "1" (
+if /i "%RunAsTI_WaitForExit%" == "1" (
+	exit /b %RunAsTI_Errorlevel%
+) else if "%RunAsTI_Errorlevel%" == "1" (
 	goto RunAsTI-Fail
 ) else (
 	if "%RunAsTI_Errorlevel%" == "2" (
@@ -75,7 +77,8 @@ if "%RunAsTI_Errorlevel%" == "1" (
 )
 : end batch / begin powershell #>
 
-function RunAsTI ($cmd,$arg) { $id='RunAsTI'; $key="Registry::HKU\$(((whoami /user)-split' ')[-1])\Volatile Environment"; $code=@'
+function RunAsTI ($cmd,$arg) { $id="RunAsTI_$([guid]::NewGuid().ToString('N'))"; $key="Registry::HKU\$(((whoami /user)-split' ')[-1])\Volatile Environment"
+ if ($env:RunAsTI_WaitForExit -eq '1') {$env:RunAsTI_ResultFile=Join-Path ([IO.Path]::GetTempPath()) ("RunAsTI-$([guid]::NewGuid().ToString('N')).result")}; $code=@'
  $I=[int32]; $M=$I.module.gettype("System.Runtime.Interop`Services.Mar`shal"); $P=$I.module.gettype("System.Int`Ptr"); $S=[string]
  $D=@(); $T=@(); $DM=[AppDomain]::CurrentDomain."DefineDynami`cAssembly"(1,1)."DefineDynami`cModule"(1); $Z=[uintptr]::size
  0..5|% {$D += $DM."Defin`eType"("AveYo_$_",1179913,[ValueType])}; $D += [uintptr]; 4..6|% {$D += $D[$_]."MakeByR`efType"()}
@@ -84,13 +87,14 @@ function RunAsTI ($cmd,$arg) { $id='RunAsTI'; $key="Registry::HKU\$(((whoami /us
  $DF=($P,$I,$P),($I,$I,$I,$I,$P,$D[1]),($I,$S,$S,$S,$I,$I,$I,$I,$I,$I,$I,$I,[int16],[int16],$P,$P,$P,$P),($D[3],$P),($P,$P,$I,$I)
  1..5|% {$k=$_; $n=1; $DF[$_-1]|% {$9=$D[$k]."Defin`eField"('f' + $n++, $_, 6)}}; 0..5|% {$T += $D[$_]."Creat`eType"()}
  0..5|% {nv "A$_" ([Activator]::CreateInstance($T[$_])) -fo}; function F ($1,$2) {$T[0]."G`etMethod"($1).invoke(0,$2)}
+ function PublishResult ($exitCode) {if (!$env:RunAsTI_ResultFile) {return}; $tempFile="$($env:RunAsTI_ResultFile).tmp"; [IO.File]::WriteAllText($tempFile,[string][int]$exitCode); [IO.File]::Move($tempFile,$env:RunAsTI_ResultFile)}
  $TI=(whoami /groups)-like'*1-16-16384*'; $As=0; if(!$cmd) {$cmd='control';$arg='admintools'}; if ($cmd-eq'This PC'){$cmd='file:'}
  if (!$TI) {'TrustedInstaller','lsass','winlogon'|% {if (!$As) {$9=sc.exe start $_; $As=@(get-process -name $_ -ea 0|% {$_})[0]}}
  function M ($1,$2,$3) {$M."G`etMethod"($1,[type[]]$2).invoke(0,$3)}; $H=@(); $Z,(4*$Z+16)|% {$H += M "AllocHG`lobal" $I $_}
  M "WriteInt`Ptr" ($P,$P) ($H[0],$As.Handle); $A1.f1=131072; $A1.f2=$Z; $A1.f3=$H[0]; $A2.f1=1; $A2.f2=1; $A2.f3=1; $A2.f4=1
  $A2.f6=$A1; $A3.f1=10*$Z+32; $A4.f1=$A3; $A4.f2=$H[1]; M "StructureTo`Ptr" ($D[2],$P,[boolean]) (($A2 -as $D[2]),$A4.f2,$false)
  $Run=@($null, "powershell -win 1 -nop -c iex `$env:R; # $id", 0, 0, 0, 0x0E080600, 0, $null, ($A4 -as $T[4]), ($A5 -as $T[5]))
- F 'CreateProcess' $Run; return}; $env:R=''; rp $key $id -force; $priv=[diagnostics.process]."GetM`ember"('SetPrivilege',42)[0]
+ $9=F 'CreateProcess' $Run; if ($Run[9].f1 -eq [IntPtr]::Zero) {PublishResult 1}; return}; $env:R=''; rp $key $id -force; $priv=[diagnostics.process]."GetM`ember"('SetPrivilege',42)[0]
  'SeSecurityPrivilege','SeTakeOwnershipPrivilege','SeBackupPrivilege','SeRestorePrivilege' |% {$priv.Invoke($null, @("$_",2))}
  $HKU=[uintptr][uint32]2147483651; $NT='S-1-5-18'; $reg=($HKU,$NT,8,2,($HKU -as $D[9])); F 'RegOpenKeyEx' $reg; $LNK=$reg[4]
  function L ($1,$2,$3) {sp 'HKLM:\SOFTWARE\Classes\AppID\{CDCBCFCA-3CDC-436f-A4E2-0E02075250C2}' 'RunAs' $3 -force -ea 0
@@ -99,11 +103,21 @@ function RunAsTI ($cmd,$arg) { $id='RunAsTI'; $key="Registry::HKU\$(((whoami /us
  $11bug=($((gwmi Win32_OperatingSystem).BuildNumber)-eq'22000')-AND(($cmd-eq'file:')-OR(test-path -lit $cmd -PathType Container))
  if ($11bug) {'System.Windows.Forms','Microsoft.VisualBasic' |% {[Reflection.Assembly]::LoadWithPartialName("'$_")}}
  if ($11bug) {$path='^(l)'+$($cmd -replace '([\+\^\%\~\(\)\[\]])','{$1}')+'{ENTER}'; $cmd='control.exe'; $arg='admintools'}
- L ($key-split'\\')[1] $LNK ''; $R=[diagnostics.process]::start($cmd,$arg); if ($R) {$R.PriorityClass='High'; $R.WaitForExit()}
- if ($11bug) {$w=0; do {if($w-gt40){break}; sleep -mi 250;$w++} until (Q); [Microsoft.VisualBasic.Interaction]::AppActivate($(Q))}
- if ($11bug) {[Windows.Forms.SendKeys]::SendWait($path)}; do {sleep 7} while(Q); L '.Default' $LNK 'Interactive User'
+ L ($key-split'\\')[1] $LNK ''; $targetExitCode=1
+ try {$R=[diagnostics.process]::start($cmd,$arg); if ($R) {try {$R.PriorityClass='High'} catch {}; $R.WaitForExit(); $targetExitCode=$R.ExitCode}
+  if ($11bug) {$w=0; do {if($w-gt40){break}; sleep -mi 250;$w++} until (Q); [Microsoft.VisualBasic.Interaction]::AppActivate($(Q))}
+  if ($11bug) {[Windows.Forms.SendKeys]::SendWait($path)}; while (Q) {sleep 7}
+ } finally {L '.Default' $LNK 'Interactive User'; PublishResult $targetExitCode}
 '@; $V='';'cmd','arg','id','key'|%{$V+="`n`$$_='$($(gv $_ -val)-replace"'","''")';"}; sp $key $id $($V,$code) -type 7 -force -ea 0
  start powershell -args "-win 1 -nop -c `n$V `$env:R=(gi `$key -ea 0).getvalue(`$id)-join''; iex `$env:R" -verb runas
+ if ($env:RunAsTI_WaitForExit -eq '1') {
+  try {$deadline=[DateTime]::UtcNow.AddMinutes(15)
+   while (!(Test-Path -LiteralPath $env:RunAsTI_ResultFile) -and [DateTime]::UtcNow -lt $deadline) {Start-Sleep -Milliseconds 200}
+   if (!(Test-Path -LiteralPath $env:RunAsTI_ResultFile)) {throw 'Timed out waiting for the TrustedInstaller process.'}
+   $resultText=[IO.File]::ReadAllText($env:RunAsTI_ResultFile).Trim(); $result=0; if (![int]::TryParse($resultText,[ref]$result)) {throw "Invalid TrustedInstaller result '$resultText'."}; return $result}
+  finally {Remove-Item -LiteralPath $env:RunAsTI_ResultFile -Force -EA 0; Remove-Item -LiteralPath "$($env:RunAsTI_ResultFile).tmp" -Force -EA 0; Remove-Item Env:\RunAsTI_ResultFile -EA 0}
+ }
+ return 0
 } #:RunAsTI lean & mean snippet by AveYo, 2023.07.06
 
 Try {
@@ -125,7 +139,8 @@ Try {
 
 	$arguments = ($initArgs.Remove(0, $exe.Length)).Trim()
 
-	RunAsTI $exe $arguments
+	$targetExitCode = RunAsTI $exe $arguments
+	exit [int]$targetExitCode
 }
 Catch {
 	Write-Host ""
