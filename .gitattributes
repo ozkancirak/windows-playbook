@@ -9,6 +9,12 @@
 *.reg text eol=crlf
 *.url text eol=crlf
 
+# Preserve intentionally UTF-16LE files byte-for-byte.
+"Executables/SystemRuntime/Other/Force Timer Resolution.xml" -text
+Executables/SystemRuntime/Scripts/Registry/SecurityHealthTray/enable.reg -text
+Executables/SystemRuntime/Scripts/Registry/TakeOwnership/add.reg -text
+Executables/SystemRuntime/Scripts/Registry/TakeOwnership/remove.reg -text
+
 # Cross-platform shell scripts remain LF.
 *.sh text eol=lf
 
