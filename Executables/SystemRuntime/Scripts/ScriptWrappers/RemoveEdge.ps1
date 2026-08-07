@@ -286,6 +286,9 @@ function InstallWebView {
         }
         else {
             curl.exe -Ls "$link" -o "$dlPath"
+            if ($LASTEXITCODE -ne 0) {
+                throw "Failed to download Edge WebView from `"$link`" (curl exit code $LASTEXITCODE)."
+            }
         }
     }
     catch {
