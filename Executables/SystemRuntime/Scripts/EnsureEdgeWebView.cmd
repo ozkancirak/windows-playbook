@@ -39,7 +39,7 @@ if %___edge%==0 (
 	%___ps%"
 )
 
-if "%errorlevel%"=="1" (
+if %errorlevel% neq 0 (
     echo Something went wrong while trying to update/install Edge or WebView.
     if "%~1" neq "/silent" (
         echo Press any key to exit...
