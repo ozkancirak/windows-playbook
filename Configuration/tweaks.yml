@@ -354,6 +354,7 @@ actions:
   # categories.
   # -----------------------------------------------------
   - !writeStatus: {status: 'Running miscellaneous tweaks'}
+  - !task: {path: 'tweaks\misc\config-device-installation.yml'}
   - !task: {path: 'tweaks\misc\config-time.yml'}
   - !task: {path: 'tweaks\misc\delete-windows-specific-files.yml'}
   - !task: {path: 'tweaks\misc\rebuild-perf-counters.yml'}

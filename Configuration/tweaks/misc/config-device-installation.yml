@@ -1,0 +1,37 @@
+---
+title: Configure Device Installation
+description: Stops Windows from fetching vendor software, drivers and metadata from the internet when a device is connected
+actions:
+    # Vendor co-installers run with SYSTEM privileges and silently install
+    # software such as Razer Synapse when a device is first connected.
+  - !registryValue:
+    path: 'HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Device Installer'
+    value: 'DisableCoInstallers'
+    data: '1'
+    type: REG_DWORD
+
+    # Do not search Windows Update for driver software.
+    # The "Drivers from Windows Update" toggle can reverse this per-machine.
+  - !registryValue:
+    path: 'HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\DriverSearching'
+    value: 'SearchOrderConfig'
+    data: '0'
+    type: REG_DWORD
+  - !registryValue:
+    path: 'HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\DriverSearching'
+    value: 'DontSearchWindowsUpdate'
+    data: '1'
+    type: REG_DWORD
+
+    # Device metadata. Both locations are written: Windows reads the
+    # non-policy key, management tools read the policy key.
+  - !registryValue:
+    path: 'HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\Device Metadata'
+    value: 'PreventDeviceMetadataFromNetwork'
+    data: '1'
+    type: REG_DWORD
+  - !registryValue:
+    path: 'HKLM\SOFTWARE\Policies\Microsoft\Windows\Device Metadata'
+    value: 'PreventDeviceMetadataFromNetwork'
+    data: '1'
+    type: REG_DWORD
