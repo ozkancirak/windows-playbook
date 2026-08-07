@@ -319,6 +319,7 @@ actions:
   # storage space or convenience.
   # -----------------------------------------------------
   - !writeStatus: {status: 'Running debloating tweaks'}
+  - !task: {path: 'tweaks\debloat\block-razer-installs.yml'}
   - !task: {path: 'tweaks\debloat\config-content-delivery.yml'}
   - !task: {path: 'tweaks\debloat\disable-reserved-storage.yml'}
   - !task: {path: 'tweaks\debloat\disable-scheduled-tasks.yml'}

@@ -1,0 +1,8 @@
+---
+title: Block Razer Software Auto Install
+description: Blocks automatic Razer software installation on newly connected Razer devices or fresh install
+actions:
+  - !powerShell:
+    command: '.\BlockRazerInstaller.ps1'
+    exeDir: true
+    wait: true
