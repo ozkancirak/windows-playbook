@@ -45,7 +45,12 @@ $sys32 = [Environment]::GetFolderPath('System')
 $windir = [Environment]::GetFolderPath('Windows')
 $env:path = "$windir;$sys32;$sys32\Wbem;$sys32\WindowsPowerShell\v1.0;" + $env:path
 $baseKey = 'HKLM:\SOFTWARE' + $(if ([Environment]::Is64BitOperatingSystem) { '\WOW6432Node' }) + '\Microsoft'
-$msedgeExe = "$([Environment]::GetFolderPath('ProgramFilesx86'))\Microsoft\Edge\Application\msedge.exe"
+$msedgeExePaths = @(
+    [Environment]::GetFolderPath('ProgramFilesx86')
+    [Environment]::GetFolderPath('ProgramFiles')
+) | Where-Object { $_ } | ForEach-Object {
+    Join-Path $_ 'Microsoft\Edge\Application\msedge.exe'
+} | Select-Object -Unique
 $edgeUWP = "$windir\SystemApps\Microsoft.MicrosoftEdge_8wekyb3d8bbwe"
 
 if ($NonInteractive -and (!$UninstallEdge -and !$InstallEdge -and !$InstallWebView -and !$RemoveEdgeData)) {
@@ -113,7 +118,12 @@ function DeleteIfExist($Path) {
 
 # True if it's installed
 function EdgeInstalled {
-    Test-Path $msedgeExe
+    foreach ($msedgeExe in $msedgeExePaths) {
+        if (Test-Path -LiteralPath $msedgeExe -PathType Leaf) {
+            return $true
+        }
+    }
+    return $false
 }
 
 function KillEdgeProcesses {
@@ -365,6 +375,9 @@ if ($UninstallEdge) {
         $removalProcess = Start-Process -FilePath $edgeRemoverPath -WindowStyle Hidden -Wait -PassThru -ErrorAction Stop
         if ($removalProcess.ExitCode -ne 0) {
             throw "The Edge removal tool failed with exit code $($removalProcess.ExitCode)."
+        }
+        if (EdgeInstalled) {
+            throw 'Edge remover completed, but Microsoft Edge is still installed.'
         }
 
         Write-Status "Successfully removed Microsoft Edge." -Level Success
