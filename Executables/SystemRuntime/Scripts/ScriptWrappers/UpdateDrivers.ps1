@@ -79,6 +79,7 @@ function Show-DriverSelection {
     foreach ($update in $Updates) {
         $item = New-Object System.Windows.Controls.ListBoxItem
         $item.Content = $update.Title.ToString().Trim()
+        $item.Tag = $update
         $ListBox.Items.Add($item) | Out-Null
     }
     $StackPanel.Children.Add($ListBox) | Out-Null
@@ -87,7 +88,7 @@ function Show-DriverSelection {
     $OKButton.Content = "OK"
     $OKButton.Margin = "10,10,10,10"
     $OKButton.Add_Click({
-        $Window.Tag = $ListBox.SelectedItems
+        $Window.Tag = @($ListBox.SelectedItems | ForEach-Object { $_.Tag })
         $Window.Close()
     })
     $StackPanel.Children.Add($OKButton) | Out-Null
@@ -95,15 +96,7 @@ function Show-DriverSelection {
     $Window.Content = $StackPanel
     $Window.ShowDialog() | Out-Null
 
-    $selectedUpdates = @()
-    foreach ($selected in $Window.Tag) {
-        $title = $selected.Content
-        $update = $Updates | Where-Object { $_.Title.ToString().Trim() -eq $title }
-        if ($update) {
-            $selectedUpdates += $update
-        }
-    }
-    return $selectedUpdates
+    return @($Window.Tag | Where-Object { $null -ne $_ })
 }
 
 function Update-Drivers {
