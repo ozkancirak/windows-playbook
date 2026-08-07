@@ -126,14 +126,33 @@ function Update-Drivers {
                 return $false
             }
 
-            Get-WUInstall -MicrosoftUpdate -Category "Drivers" -UpdateID $updateIds -AcceptAll -IgnoreReboot -Confirm:$false -ErrorAction Stop | Out-Null
+            $installResults = @(Get-WUInstall -MicrosoftUpdate -Category "Drivers" -UpdateID $updateIds -AcceptAll -IgnoreReboot -Confirm:$false -ErrorAction Stop)
+            $installedUpdateIds = @(
+                $installResults |
+                    Where-Object { [string]$_.Status -match '^..I' } |
+                    ForEach-Object { $_.Identity.UpdateID } |
+                    Where-Object { $_ }
+            )
+            $notInstalledUpdateIds = @($updateIds | Where-Object { $_ -notin $installedUpdateIds })
+            if ($notInstalledUpdateIds.Count -gt 0) {
+                Write-Error "One or more selected driver updates were not installed successfully; restart was skipped."
+                return $false
+            }
+
             Write-Host "Driver updates installed successfully!"
 
-            $restartChoice = Read-Host "Do you want to restart now? (Y/N)"
-            if ($restartChoice -match "^[Yy]$") {
+            if ($RestartAfterUpdate) {
                 Write-Host "Restarting the system in 10 seconds..."
                 Start-Sleep -Seconds 10
                 Restart-Computer -Force
+            }
+            elseif (-not $Silent) {
+                $restartChoice = Read-Host "Do you want to restart now? (Y/N)"
+                if ($restartChoice -match "^[Yy]$") {
+                    Write-Host "Restarting the system in 10 seconds..."
+                    Start-Sleep -Seconds 10
+                    Restart-Computer -Force
+                }
             }
         }
         else {
