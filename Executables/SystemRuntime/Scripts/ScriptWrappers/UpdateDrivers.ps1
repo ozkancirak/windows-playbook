@@ -40,14 +40,33 @@ function Test-Admin {
 Test-Admin -ScriptBoundParameters $PSBoundParameters
 
 function Install-PSWindowsUpdateModule {
-    if (-not (Get-PackageProvider -ListAvailable | Where-Object Name -eq "NuGet")) {
-        Install-PackageProvider -Name NuGet -Force -Confirm:$false
+    $requiredVersion = [version]'2.2.1.5'
+    $minimumNuGetVersion = [version]'2.8.5.201'
+
+    $requiredModule = Get-Module -ListAvailable -Name 'PSWindowsUpdate' |
+        Where-Object { $_.Version -eq $requiredVersion } |
+        Select-Object -First 1
+
+    if (-not $requiredModule) {
+        $nugetProvider = Get-PackageProvider -ListAvailable -Name 'NuGet' -ErrorAction SilentlyContinue |
+            Sort-Object Version -Descending |
+            Select-Object -First 1
+        if (-not $nugetProvider -or $nugetProvider.Version -lt $minimumNuGetVersion) {
+            Install-PackageProvider -Name 'NuGet' -MinimumVersion $minimumNuGetVersion `
+                -Scope CurrentUser -Force -Confirm:$false -ErrorAction Stop | Out-Null
+        }
+
+        $null = Get-PSRepository -Name 'PSGallery' -ErrorAction Stop
+        Install-Module -Name 'PSWindowsUpdate' -RequiredVersion $requiredVersion `
+            -Repository 'PSGallery' -Scope CurrentUser -Force -Confirm:$false -ErrorAction Stop
     }
-    if ((Get-PSRepository -Name PSGallery).InstallationPolicy -ne "Trusted") {
-        Set-PSRepository -Name PSGallery -InstallationPolicy Trusted
-    }
-    if (-not (Get-Module -ListAvailable -Name PSWindowsUpdate)) {
-        Install-Module -Name PSWindowsUpdate -Force -Scope CurrentUser -Confirm:$false
+
+    $loadedModules = @(
+        Import-Module -Name 'PSWindowsUpdate' -RequiredVersion $requiredVersion `
+            -Force -PassThru -ErrorAction Stop
+    )
+    if ($requiredVersion -notin $loadedModules.Version) {
+        throw "PSWindowsUpdate $requiredVersion could not be loaded."
     }
 }
 
