@@ -218,6 +218,7 @@ actions:
   - !task: {path: 'tweaks\qol\explorer\always-more-details-transfer.yml'}
   - !task: {path: 'tweaks\qol\explorer\disable-invalid-shortcuts-search.yml'}
   - !task: {path: 'tweaks\qol\explorer\disable-check-boxes.yml'}
+  - !task: {path: 'tweaks\qol\explorer\disable-home.yml'}
   #- !task: {path: 'tweaks\qol\explorer\disable-folders-this-pc.yml'}
   - !task: {path: 'tweaks\qol\explorer\disable-network-navigation-pane.yml'}
   - !task: {path: 'tweaks\qol\explorer\full-context-on-more-than-15-items.yml'}
