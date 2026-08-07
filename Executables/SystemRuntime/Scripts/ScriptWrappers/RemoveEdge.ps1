@@ -48,7 +48,7 @@ $baseKey = 'HKLM:\SOFTWARE' + $(if ([Environment]::Is64BitOperatingSystem) { '\W
 $msedgeExe = "$([Environment]::GetFolderPath('ProgramFilesx86'))\Microsoft\Edge\Application\msedge.exe"
 $edgeUWP = "$windir\SystemApps\Microsoft.MicrosoftEdge_8wekyb3d8bbwe"
 
-if ($NonInteractive -and (!$UninstallEdge -and !$InstallEdge -and !$InstallWebView)) {
+if ($NonInteractive -and (!$UninstallEdge -and !$InstallEdge -and !$InstallWebView -and !$RemoveEdgeData)) {
     $NonInteractive = $false
 }
 if ($InstallEdge -and $UninstallEdge) {
@@ -106,8 +106,8 @@ function InternetCheck {
 }
 
 function DeleteIfExist($Path) {
-    if (Test-Path $Path) {
-        Remove-Item -Path $Path -Force -Recurse -Confirm:$false
+    if (Test-Path -LiteralPath $Path -ErrorAction Stop) {
+        Remove-Item -LiteralPath $Path -Force -Recurse -Confirm:$false -ErrorAction Stop
     }
 }
 
@@ -290,7 +290,7 @@ else {
 }
 
 $edgeInstalled = EdgeInstalled
-if (!$UninstallEdge -and !$InstallEdge -and !$InstallWebView) {
+if (!$UninstallEdge -and !$InstallEdge -and !$InstallWebView -and !$RemoveEdgeData) {
     $host.UI.RawUI.WindowTitle = "Microsoft Edge Remover"
 
     $RemoveEdgeData = $false
@@ -350,33 +350,49 @@ To perform an action, also type its number.
 # https://github.com/ShadowWhisperer/Remove-MS-Edge
 if ($UninstallEdge) {
     Write-Status "Uninstalling Edge Chromium..."
+    $tempDirectory = $null
+    $removalFailure = $null
     try {
         $tempDirectory = Join-Path ([IO.Path]::GetTempPath()) ([IO.Path]::GetRandomFileName())
-        New-Item -ItemType Directory -Path $tempDirectory | Out-Null
+        New-Item -ItemType Directory -Path $tempDirectory -ErrorAction Stop | Out-Null
+        $edgeRemoverPath = Join-Path $tempDirectory 'RemoveEdge.exe'
 
-        & curl.exe -LSs "https://github.com/ShadowWhisperer/Remove-MS-Edge/releases/latest/download/Remove-Edge.exe" -o "$tempDirectory\RemoveEdge.exe"
-        if (!$?) {
-            Write-Error "Downloading script failed."
-            exit 1
+        & curl.exe -LSs "https://github.com/ShadowWhisperer/Remove-MS-Edge/releases/latest/download/Remove-Edge.exe" -o $edgeRemoverPath
+        if ($LASTEXITCODE -ne 0 -or !(Test-Path -LiteralPath $edgeRemoverPath -PathType Leaf)) {
+            throw "Downloading the Edge removal tool failed with exit code $LASTEXITCODE."
         }
 
-        Start-Process -FilePath "$tempDirectory\RemoveEdge.exe" -WindowStyle Hidden -Wait
-        Write-Output "Successfully removed Microsoft Edge..."
-        Write-Output "Press any key to exit"
-        Read-Host
-        exit
+        $removalProcess = Start-Process -FilePath $edgeRemoverPath -WindowStyle Hidden -Wait -PassThru -ErrorAction Stop
+        if ($removalProcess.ExitCode -ne 0) {
+            throw "The Edge removal tool failed with exit code $($removalProcess.ExitCode)."
+        }
+
+        Write-Status "Successfully removed Microsoft Edge." -Level Success
     }
     catch {
-        Write-Warning "An error occurred: $_"
-        return $false
+        $removalFailure = $_
+    }
+    finally {
+        if ($tempDirectory -and (Test-Path -LiteralPath $tempDirectory)) {
+            Remove-Item -LiteralPath $tempDirectory -Recurse -Force -ErrorAction SilentlyContinue
+        }
+    }
+
+    if ($removalFailure) {
+        Write-Status "Failed to remove Microsoft Edge: $($removalFailure.Exception.Message)" -Level Critical -Exit -ExitCode 11
     }
     Write-Output ""
 }
 
 if ($RemoveEdgeData) {
-    KillEdgeProcesses
-    DeleteIfExist "$([Environment]::GetFolderPath('LocalApplicationData'))\Microsoft\Edge"
-    Write-Status 'Removed any existing Edge Chromium user data.'
+    try {
+        KillEdgeProcesses
+        DeleteIfExist "$([Environment]::GetFolderPath('LocalApplicationData'))\Microsoft\Edge"
+        Write-Status 'Removed any existing Edge Chromium user data.'
+    }
+    catch {
+        Write-Status "Failed to remove Edge Chromium user data: $($_.Exception.Message)" -Level Critical -Exit -ExitCode 12
+    }
     Write-Output ''
 }
 
@@ -390,5 +406,5 @@ if ($InstallWebView) {
 }
 
 Write-Host 'Completed.' -ForegroundColor Cyan
-if ($NonInteractive) { exit }
+if ($NonInteractive) { exit 0 }
 Pause
