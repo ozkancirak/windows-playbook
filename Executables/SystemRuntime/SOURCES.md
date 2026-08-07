@@ -3,6 +3,16 @@ Some of the Playbook contains binary executables. This file provides some verifi
 
 The root of the file paths listed here starts in `Executables`.
 
+## Runtime-downloaded Edge removal helper
+
+- Path: Not included in the repository; downloaded to a temporary directory as `Remove-Edge.exe`
+    - Source: https://github.com/ShadowWhisperer/Remove-MS-Edge/releases/latest/download/Remove-Edge.exe
+    - Repository: https://github.com/ShadowWhisperer/Remove-MS-Edge
+    - Version: `latest` (not pinned)
+    - SHA256 Hash: Not recorded or verified; the download URL currently tracks `latest`
+- License: CC0-1.0
+- Last Verified: 8/7/2026
+
 ## SetTimerResolution & MeasureSleep
 
 - Path: `\SystemRuntime\Tools\SetTimerResolution.exe`
