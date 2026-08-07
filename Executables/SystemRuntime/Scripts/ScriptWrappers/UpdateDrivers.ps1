@@ -7,15 +7,37 @@ param (
 $script:SelectedUpdates = @()
 
 function Test-Admin {
+    param (
+        [System.Collections.IDictionary]$ScriptBoundParameters
+    )
+
     $currentUser = [System.Security.Principal.WindowsIdentity]::GetCurrent()
     $principal   = New-Object System.Security.Principal.WindowsPrincipal($currentUser)
     if (-not $principal.IsInRole([System.Security.Principal.WindowsBuiltInRole]::Administrator)) {
         Write-Host "Restarting script with administrator privileges..."
-        Start-Process -FilePath "powershell" -ArgumentList "-ExecutionPolicy Bypass -NoProfile -File `"$PSCommandPath`"" -Verb RunAs
+
+        $forwardedArguments = foreach ($parameter in $ScriptBoundParameters.GetEnumerator()) {
+            if (
+                $parameter.Value -is [System.Management.Automation.SwitchParameter] -and
+                $parameter.Value.IsPresent
+            ) {
+                "-$($parameter.Key)"
+            }
+        }
+
+        $elevationArguments = @(
+            '-ExecutionPolicy Bypass'
+            '-NoProfile'
+            ('-File "{0}"' -f $PSCommandPath)
+        )
+        $elevationArguments += $forwardedArguments
+        $elevationArgumentString = $elevationArguments -join ' '
+
+        Start-Process -FilePath "$PSHOME\powershell.exe" -ArgumentList $elevationArgumentString -Verb RunAs
         exit
     }
 }
-Test-Admin
+Test-Admin -ScriptBoundParameters $PSBoundParameters
 
 function Install-PSWindowsUpdateModule {
     if (-not (Get-PackageProvider -ListAvailable | Where-Object Name -eq "NuGet")) {
