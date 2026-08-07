@@ -6,7 +6,7 @@ detail.
 
 | Component | Included form | Upstream/source | License or notice |
 |---|---|---|---|
-| ViVeTool 0.3.3 | Two architecture-specific ZIP archives | `thebookisclosed/ViVe` | GPL-3.0 |
+| ViVeTool 0.3.4 | Two architecture-specific ZIP archives | `thebookisclosed/ViVe` | GPL-3.0 |
 | Newtonsoft.Json | Library inside ViVeTool archives | `JamesNK/Newtonsoft.Json` | MIT |
 | SetTimerResolution 1.0.0 | Executable | `valleyofdoom/TimerResolution` | GPL-3.0 |
 | MeasureSleep 1.0.0 | Executable | `valleyofdoom/TimerResolution` | GPL-3.0 |
