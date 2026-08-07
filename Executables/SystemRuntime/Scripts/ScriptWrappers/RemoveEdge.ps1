@@ -91,7 +91,7 @@ function Write-Status {
     )[$([LogLevel].GetEnumValues().IndexOf($Level))]
 
     $Text -split "`n" | ForEach-Object {
-        Write-Host "[$($Level.ToString().ToUpper())] $_" -ForegroundColor $colour
+        Write-Host "[$($Level.ToString().ToUpperInvariant())] $_" -ForegroundColor $colour
     }
 
     if ($Exit) {
@@ -389,12 +389,29 @@ if ($UninstallEdge) {
             throw "Downloading the Edge removal tool failed with exit code $LASTEXITCODE."
         }
 
-        $removalProcess = Start-Process -FilePath $edgeRemoverPath -WindowStyle Hidden -Wait -PassThru -ErrorAction Stop
-        if ($removalProcess.ExitCode -ne 0) {
-            throw "The Edge removal tool failed with exit code $($removalProcess.ExitCode)."
+        # The upstream remover is a frozen Python program that decodes child process
+        # output using the system code page. On a non-UTF-8 locale (cp1254, for
+        # example) that raises UnicodeDecodeError after Edge has already been
+        # removed, so ask Python for UTF-8 before launching it.
+        $previousPythonUtf8 = $env:PYTHONUTF8
+        $previousPythonIoEncoding = $env:PYTHONIOENCODING
+        $env:PYTHONUTF8 = '1'
+        $env:PYTHONIOENCODING = 'utf-8'
+        try {
+            $removalProcess = Start-Process -FilePath $edgeRemoverPath -WindowStyle Hidden -Wait -PassThru -ErrorAction Stop
         }
+        finally {
+            $env:PYTHONUTF8 = $previousPythonUtf8
+            $env:PYTHONIOENCODING = $previousPythonIoEncoding
+        }
+
+        # Trust the observable state over the reported exit code. The remover can
+        # fail while printing its results even though the removal itself succeeded.
         if (EdgeInstalled) {
-            throw 'Edge remover completed, but Microsoft Edge is still installed.'
+            throw "The Edge removal tool exited with code $($removalProcess.ExitCode) and Microsoft Edge is still installed."
+        }
+        if ($removalProcess.ExitCode -ne 0) {
+            Write-Status "The Edge removal tool exited with code $($removalProcess.ExitCode), but Microsoft Edge is no longer installed. Continuing." -Level Warning
         }
 
         Write-Status "Successfully removed Microsoft Edge." -Level Success
