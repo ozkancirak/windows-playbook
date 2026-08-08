@@ -30,6 +30,16 @@ actions:
     value: 'AllowTelemetry'
     data: '0'
     type: REG_DWORD
+  - !registryValue:
+    path: 'HKLM\SOFTWARE\Policies\Microsoft\Windows\DataCollection'
+    value: 'AllowCommercialDataPipeline'
+    data: '0'
+    type: REG_DWORD
+  - !registryValue:
+    path: 'HKLM\SOFTWARE\Policies\Microsoft\Windows\DataCollection'
+    value: 'MicrosoftEdgeDataOptIn'
+    data: '0'
+    type: REG_DWORD
 
     # Misc
   - !registryValue:
