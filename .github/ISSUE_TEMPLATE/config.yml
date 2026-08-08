@@ -1,0 +1,13 @@
+blank_issues_enabled: true
+contact_links:
+  - name: Security vulnerability
+    url: https://github.com/ozkancirak/windows-playbook/blob/main/.github/SECURITY.md
+    about: Read the security policy first — it explains what belongs here and what belongs to Microsoft or AME Wizard.
+
+  - name: Windows issue
+    url: https://www.microsoft.com/en-us/msrc/faqs-report-an-issue
+    about: If the behaviour also happens on a clean Windows install of the same build, report it to Microsoft.
+
+  - name: AME Wizard issue
+    url: https://ameliorated.io
+    about: Problems with how a playbook is applied, reverted or packaged belong to AME Wizard.

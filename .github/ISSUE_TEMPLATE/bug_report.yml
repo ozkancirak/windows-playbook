@@ -1,0 +1,121 @@
+name: Bug report
+description: Something behaves incorrectly after applying the playbook
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Behaviour depends heavily on the options chosen during installation, so please
+        fill in the option fields even if they seem unrelated to the problem.
+
+        If the same thing happens on a clean Windows install of the same build, it is a
+        Windows issue rather than a playbook one. For security vulnerabilities, read
+        [SECURITY.md](../blob/main/.github/SECURITY.md) first.
+
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened
+      description: What went wrong, and what you expected instead.
+    validations:
+      required: true
+
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open ...
+        2. Click ...
+        3. ...
+    validations:
+      required: true
+
+  - type: input
+    id: build
+    attributes:
+      label: Windows build
+      description: Run `winver`, or `[Environment]::OSVersion.Version` in PowerShell.
+      placeholder: 26200.8973
+    validations:
+      required: true
+
+  - type: input
+    id: playbook-version
+    attributes:
+      label: Playbook version
+      description: From `playbook.conf`, or the release you installed.
+      placeholder: 0.1.0
+    validations:
+      required: true
+
+  - type: dropdown
+    id: defender
+    attributes:
+      label: Defender
+      options:
+        - Enable Defender (default)
+        - Disable Defender
+        - Not sure
+    validations:
+      required: true
+
+  - type: dropdown
+    id: mitigations
+    attributes:
+      label: CPU mitigations
+      options:
+        - Default Windows Mitigations (default)
+        - Disable All Mitigations
+        - Not sure
+    validations:
+      required: true
+
+  - type: dropdown
+    id: updates
+    attributes:
+      label: Automatic Windows Updates
+      options:
+        - Disable Automatic Windows Updates (default)
+        - Enable Automatic Windows Updates
+        - Not sure
+    validations:
+      required: true
+
+  - type: checkboxes
+    id: options
+    attributes:
+      label: Optional features selected
+      description: Tick everything you selected during installation.
+      options:
+        - label: Disable Hibernation
+        - label: Maximum Performance (Disable Power Saving)
+        - label: Disable Core Isolation
+        - label: Remove Snipping Tool App
+        - label: Remove Microsoft Edge
+        - label: Install a Browser
+
+  - type: input
+    id: browser
+    attributes:
+      label: Browser installed
+      description: Only if you selected "Install a Browser".
+      placeholder: Brave / LibreWolf / Firefox / Chrome
+
+  - type: textarea
+    id: extra
+    attributes:
+      label: Anything else
+      description: |
+        Relevant registry values, script output, event log entries, or a note about
+        toggles you ran from the System Configuration folder afterwards.
+
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Before submitting
+      options:
+        - label: This does not happen on a clean Windows install of the same build
+          required: true
+        - label: I have not included passwords, tokens or personal data in this report
+          required: true
