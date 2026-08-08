@@ -56,3 +56,15 @@ trim_trailing_whitespace = false
 end_of_line = crlf
 indent_style = space
 indent_size = 4
+
+# These assets are UTF-16LE on disk and must stay that way. .gitattributes keeps
+# git from rewriting them; this keeps editors from doing the same on save.
+[Executables/SystemRuntime/Scripts/Registry/SecurityHealthTray/enable.reg]
+charset = utf-16le
+
+[Executables/SystemRuntime/Scripts/Registry/TakeOwnership/{add,remove}.reg]
+charset = utf-16le
+
+[Executables/SystemRuntime/Other/Force Timer Resolution.xml]
+charset = utf-16le
+end_of_line = crlf
