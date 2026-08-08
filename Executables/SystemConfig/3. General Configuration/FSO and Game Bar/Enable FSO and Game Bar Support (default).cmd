@@ -19,9 +19,9 @@ if not "%~1"=="/silent" call "%windir%\SystemRuntime\Scripts\ShowServiceWarning.
 
     reg delete "HKLM\SYSTEM\CurrentControlSet\Control\Session Manager\Environment" /v "__COMPAT_LAYER" /f
 
-    reg delete "HKCU\System\GameBar" /v "GamePanelStartupTipIndex" /f
-    reg delete "HKCU\System\GameBar" /v "ShowStartupPanel" /f
-    reg delete "HKCU\System\GameBar" /v "UseNexusForGameBarEnabled" /f
+    reg delete "HKCU\SOFTWARE\Microsoft\GameBar" /v "GamePanelStartupTipIndex" /f
+    reg delete "HKCU\SOFTWARE\Microsoft\GameBar" /v "ShowStartupPanel" /f
+    reg delete "HKCU\SOFTWARE\Microsoft\GameBar" /v "UseNexusForGameBarEnabled" /f
 
     reg add "HKLM\SOFTWARE\Microsoft\WindowsRuntime\ActivatableClassId\Windows.Gaming.GameBar.PresenceServer.Internal.PresenceWriter" /v "ActivationType" /t REG_DWORD /d "1" /f
 
