@@ -25,6 +25,7 @@ if not "%~1"=="/silent" call "%windir%\SystemRuntime\Scripts\ShowServiceWarning.
 ) > nul 2>&1
 
 call "%windir%\SystemRuntime\Scripts\ConfigureSettingsPages.cmd" /unhide privacy-location
+reg delete "HKCU\Software\Microsoft\Windows\CurrentVersion\CapabilityAccessManager\ConsentStore\location" /v "ShowGlobalPrompts" /f > nul 2>&1
 
 set key1="HKLM\SOFTWARE\Policies\Microsoft\FindMyDevice"
 choice /c:yn /n /m "Would you like to unlock Find My Device functionality? [Y/N] "
