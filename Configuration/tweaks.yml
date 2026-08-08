@@ -225,7 +225,6 @@ actions:
   - !task: {path: 'tweaks\qol\explorer\hide-frequently-used-items.yml'}
   - !task: {path: 'tweaks\qol\explorer\import-power-plan.yml'}
   - !task: {path: 'tweaks\qol\explorer\extend-cache.yml'}
-  - !task: {path: 'tweaks\qol\explorer\minimize-mouse-hover-time.yml'}
   - !task: {path: 'tweaks\qol\explorer\no-internet-open-with.yml'}
   - !task: {path: 'tweaks\qol\explorer\open-to-this-pc.yml'}
   - !task: {path: 'tweaks\qol\explorer\removable-drives-only-this-pc.yml'}
