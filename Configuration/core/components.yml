@@ -41,6 +41,19 @@ actions:
     operation: delete
     option: 'defender-disable'
     iso: only
+    # MSRT is delivered separately from Defender and keeps being offered
+    # through Windows Update unless this runs. It must run BEFORE the
+    # package change below, otherwise the state is left half applied.
+  - !powerShell:
+    command: '.\SetMsrtAvailability.ps1 -State Disabled'
+    option: 'defender-disable'
+    exeDir: true
+    wait: true
+  - !powerShell:
+    command: '.\SetMsrtAvailability.ps1 -State Enabled'
+    option: 'defender-enable'
+    exeDir: true
+    wait: true
   - !powerShell:
     command: >-
       & """$([Environment]::GetFolderPath('Windows'))\SystemRuntime\Scripts\packageInstall.ps1"""
