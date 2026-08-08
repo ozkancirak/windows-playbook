@@ -7,3 +7,8 @@
 
 # Local release output
 dist/
+
+# Windows
+Thumbs.db
+ehthumbs.db
+desktop.ini
