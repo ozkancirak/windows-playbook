@@ -67,6 +67,11 @@ actions:
     value: 'DisableSearchBoxSuggestions'
     data: '1'
     type: REG_DWORD
+  - !registryValue:
+    path: 'HKLM\SOFTWARE\Policies\Microsoft\Windows\Windows Search'
+    value: 'AllowCloudSearch'
+    data: '0'
+    type: REG_DWORD
     
     
     # Set search as icon on taskbar
